@@ -1,0 +1,26 @@
+# Data
+data/
+submissions/
+*.zip
+*.npy
+
+# Models
+models/
+catboost_info/
+
+# Logs
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
