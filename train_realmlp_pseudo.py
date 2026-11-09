@@ -1,6 +1,8 @@
 """
-RealMLP + Pseudo-labeling.
-Добавляем уверенные test predictions (>threshold или <1-threshold) в train.
+RealMLP + pseudo-labeling experiment.
+
+Adds confident test predictions (p > threshold or p < 1-threshold) into train.
+Did not improve public LB vs plain RealMLP.
 
 Usage:
     python train_realmlp_pseudo.py --no-submit
