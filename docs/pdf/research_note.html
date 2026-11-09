@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>F1 Pit Stop Prediction — Solution Note</title>
+<style>
+@page { margin: 16mm; }
+body { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 11pt; line-height: 1.42; color: #1a1a1a; max-width: 740px; margin: 0 auto; padding: 20px 14px 40px; }
+h1 { font-size: 1.55rem; line-height: 1.2; margin: 0 0 0.5em; }
+h2 { font-size: 1.2rem; margin-top: 1.4em; border-bottom: 1px solid #ddd; padding-bottom: 0.15em; }
+h3 { font-size: 1.02rem; margin-top: 1.1em; }
+img { max-width: 100%; height: auto; display: block; margin: 0.9em auto; }
+code, pre { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; }
+pre { background: #f6f6f6; padding: 10px; overflow-x: auto; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; margin: 0.9em 0; font-size: 0.9em; }
+th, td { border: 1px solid #ccc; padding: 5px 7px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+a { color: #0b57d0; text-decoration: none; }
+</style></head><body>
+<h1 id="solution-note-f1-pit-stop-prediction-kaggle-ps-s6e5">Solution
+Note: F1 Pit Stop Prediction (Kaggle PS S6E5)</h1>
+<p><strong>Author:</strong> ron1n97<br />
+<strong>Competition:</strong> <a
+href="https://www.kaggle.com/competitions/playground-series-s6e5">Predicting
+F1 Pit Stops — Playground Series S6E5</a><br />
+<strong>Result:</strong> <strong>568th / 3024 teams (top 18.8%)</strong>
+· public LB <strong>0.95384</strong> ROC-AUC<br />
+<strong>Stack:</strong> RealMLP (pytabkit), LightGBM / XGBoost /
+CatBoost baselines, Target Encoding<br />
+<strong>Code:</strong> this repository · <a
+href="https://www.kaggle.com/competitions/playground-series-s6e5/writeups/568th-place-solution-realmlp-original-dataset">Kaggle
+writeup</a></p>
+<hr />
+<h2 id="abstract">Abstract</h2>
+<p>Binary classification: given lap-level Formula 1 state, predict
+whether the driver pits on the <strong>next</strong> lap
+(<code>PitNextLap</code>). Metric is ROC-AUC.</p>
+<p>I finished <strong>568th out of 3024 teams</strong> — <strong>top
+18.8%</strong> of the field, beating about <strong>81.2%</strong> of
+teams — with public LB <strong>0.95384</strong>. The selected model is a
+single <strong>RealMLP</strong> ensemble trained with the competition’s
+original source dataset. The largest gain was not exotic feature
+engineering; it was switching architecture from a tuned GBDT stack to
+RealMLP (+~0.013 public LB).</p>
+<figure>
+<img src="../../figures/placement.png" alt="Placement" />
+<figcaption aria-hidden="true">Placement</figcaption>
+</figure>
+<hr />
+<h2 id="problem">1. Problem</h2>
+<table>
+<tbody>
+<tr>
+<td>Task</td>
+<td>Predict <code>PitNextLap</code> ∈ {0, 1}</td>
+</tr>
+<tr>
+<td>Metric</td>
+<td>ROC-AUC</td>
+</tr>
+<tr>
+<td>Train / test</td>
+<td>~439k / ~188k synthetic playground rows</td>
+</tr>
+<tr>
+<td>Original source</td>
+<td>~101k rows (<code>f1_strategy_dataset_v4.csv</code>)</td>
+</tr>
+<tr>
+<td>Field size</td>
+<td><strong>3024</strong> teams</td>
+</tr>
+<tr>
+<td>My place</td>
+<td><strong>#568</strong></td>
+</tr>
+<tr>
+<td>Percentile</td>
+<td><strong>top 18.8%</strong> (rank / teams)</td>
+</tr>
+<tr>
+<td>Public LB</td>
+<td><strong>0.95384</strong></td>
+</tr>
+<tr>
+<td>Selected OOF</td>
+<td><strong>0.95407</strong> (RealMLP <code>n_ens=20</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Positive rate in train is ~20%. Features include tyre compound and
+life, stint, position, lap time, cumulative degradation, race progress,
+and race/year identifiers.</p>
+<hr />
+<h2 id="score-ladder">2. Score ladder</h2>
+<figure>
+<img src="../../figures/lb_ladder.png" alt="LB ladder" />
+<figcaption aria-hidden="true">LB ladder</figcaption>
+</figure>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>OOF AUC</th>
+<th>Public LB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LGB + XGB + CatBoost baseline</td>
+<td>0.9268</td>
+<td>0.9384</td>
+</tr>
+<tr>
+<td>+ original dataset</td>
+<td>0.9346</td>
+<td>0.9411</td>
+</tr>
+<tr>
+<td>RealMLP <code>n_ens=5</code></td>
+<td>0.9530</td>
+<td>0.9536</td>
+</tr>
+<tr>
+<td><strong>RealMLP <code>n_ens=20</code> (selected)</strong></td>
+<td><strong>0.9541</strong></td>
+<td><strong>0.9538</strong></td>
+</tr>
+<tr>
+<td>+ pseudo-labeling</td>
+<td>0.9542</td>
+<td>0.9537</td>
+</tr>
+</tbody>
+</table>
+<p>Selected public LB on the board: <strong>0.95384</strong> (rounding /
+submission variant of the <code>n_ens=20</code> line).</p>
+<figure>
+<img src="../../figures/research_path.png" alt="Research path" />
+<figcaption aria-hidden="true">Research path</figcaption>
+</figure>
+<hr />
+<h2 id="method">3. Method</h2>
+<h3 id="model">3.1 Model</h3>
+<p><code>RealMLP_TD_Classifier</code> from <a
+href="https://github.com/LennartPurucker/pytabkit">pytabkit</a> —
+tabular NN ensemble with periodic linear representations, label
+smoothing, and a strong default transform stack. Hyperparameters largely
+followed <a
+href="https://www.kaggle.com/code/yekenot/f1-pitstop-realmlp">yekenot’s
+public notebook</a>; I did not win by inventing a new architecture.</p>
+<p>Key knobs in the selected run: <code>n_ens=20</code>, hidden
+<code>[512, 256, 128]</code>, SiLU, <code>lr=0.019</code>, PLR heads,
+label smoothing <code>0.01</code>.</p>
+<h3 id="training-protocol">3.2 Training protocol</h3>
+<ul>
+<li><strong>5-fold StratifiedKFold</strong> (not GroupKFold by race) so
+Target Encoding stays useful<br />
+</li>
+<li>Append a fold of the <strong>original</strong> dataset to each
+training split<br />
+</li>
+<li>Target-encode <code>Race×Compound</code> and
+<code>Race×Year</code><br />
+</li>
+<li>Force <strong>CPU</strong> on Apple Silicon — pytabkit + MPS hung in
+practice (~20 min/fold, ~100 min full run)</li>
+</ul>
+<h3 id="features">3.3 Features</h3>
+<p>Arithmetic interactions, floor-factorized categorical embeddings for
+numerical columns, count encodings, quantile bins (RaceProgress ×200,
+LapTime ×7), and the TE combos above. Temporal lags / rolling pace
+features helped almost nothing on an LGB proxy and <strong>hurt</strong>
+RealMLP OOF when added wholesale.</p>
+<hr />
+<h2 id="diagnostics-selected-realmlp">4. Diagnostics (selected
+RealMLP)</h2>
+<figure>
+<img src="../../figures/fold_auc.png" alt="Per-fold AUC" />
+<figcaption aria-hidden="true">Per-fold AUC</figcaption>
+</figure>
+<p>Fold AUCs for <code>n_ens=20</code>: 0.95513, 0.95305, 0.95392,
+0.95329, 0.95499 → overall OOF <strong>0.95407</strong>.</p>
+<figure>
+<img src="../../figures/roc_oof.png" alt="ROC" />
+<figcaption aria-hidden="true">ROC</figcaption>
+</figure>
+<figure>
+<img src="../../figures/score_by_class.png" alt="Score by class" />
+<figcaption aria-hidden="true">Score by class</figcaption>
+</figure>
+<figure>
+<img src="../../figures/reliability_oof.png" alt="Reliability" />
+<figcaption aria-hidden="true">Reliability</figcaption>
+</figure>
+<p>Discrimination is strong; calibration is usable but AUC only cares
+about ranking — no post-hoc calibration was needed for the leaderboard
+metric.</p>
+<hr />
+<h2 id="what-did-not-work">5. What did not work</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Experiment</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Heavy temporal FE (lags, rolling lap times, degradation rates)</td>
+<td>≈0 on LGB proxy; RealMLP OOF dropped (~0.953→0.952)</td>
+</tr>
+<tr>
+<td>RealMLP ↔︎ GBDT blends (90/10 … 70/30)</td>
+<td>All ≤ pure RealMLP (pred correlation ~0.92)</td>
+</tr>
+<tr>
+<td>Pseudo-labeling confident test rows</td>
+<td>OOF up, public LB down</td>
+</tr>
+<tr>
+<td>Optuna on LGB before architecture search</td>
+<td>Plateau ~0.941 LB — wrong bottleneck</td>
+</tr>
+</tbody>
+</table>
+<p>Top finishers used 100–200+ model logit stacks. This note documents a
+<strong>single-model</strong> path that still cleared the top fifth of
+the field.</p>
+<hr />
+<h2 id="takeaways">6. Takeaways</h2>
+<ol type="1">
+<li><strong>Find the right model family early.</strong> A day of GBDT
+temporal FE was worth less than two hours implementing RealMLP.<br />
+</li>
+<li><strong>Original data is free signal</strong> in Playground comps —
+use it.<br />
+</li>
+<li><strong>CV scheme is a product choice.</strong> StratifiedKFold + TE
+beat the “cleaner” GroupKFold recipe here.<br />
+</li>
+<li><strong>OOF-up / LB-down tricks</strong> (pseudo-labels,
+over-blending) are easy to overfit when the public board is packed.</li>
+</ol>
+<hr />
+<h2 id="reproduce">Reproduce</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> download_data.py</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> train_realmlp.py <span class="at">--no-submit</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/make_figures.py</span></code></pre></div>
+<p>Full code and experiment log: repository root · <a
+href="experiment_log.md"><code>docs/experiment_log.md</code></a>.</p>
+
+</body></html>

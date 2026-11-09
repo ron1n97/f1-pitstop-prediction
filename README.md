@@ -1,11 +1,14 @@
 # F1 Pit Stop Prediction
 
+[![Solution Note PDF](https://img.shields.io/badge/Solution%20Note-PDF-red?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](docs/pdf/research_note.pdf)
+[![Markdown](https://img.shields.io/badge/Solution%20Note-Markdown-blue?style=for-the-badge)](docs/research_note.md)
 [![Kaggle](https://img.shields.io/badge/Kaggle-PS%20S6E5-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)](https://www.kaggle.com/competitions/playground-series-s6e5)
-[![Writeup](https://img.shields.io/badge/Solution-Writeup-orange?style=for-the-badge)](https://www.kaggle.com/competitions/playground-series-s6e5/writeups/568th-place-solution-realmlp-original-dataset)
-[![Result](https://img.shields.io/badge/LB-0.95384%20·%20568%2F3024%20(top%2019%25)-success?style=for-the-badge)](https://www.kaggle.com/competitions/playground-series-s6e5)
+[![Result](https://img.shields.io/badge/LB-0.95384%20·%20568%2F3024%20(top%2018.8%25)-success?style=for-the-badge)](https://www.kaggle.com/competitions/playground-series-s6e5)
 
 Kaggle Playground Series S6E5 — binary classification: **will a driver pit on the next lap?**  
-Metric: ROC-AUC. Final selected submission: **0.95384 public LB, 568th / 3024 teams (top 19%)**.
+Metric: ROC-AUC. Final selected submission: **0.95384 public LB · 568th / 3024 teams · top 18.8%** (beat ~81% of the field).
+
+Start here: **[open the PDF](docs/pdf/research_note.pdf)** · or the [Markdown note](docs/research_note.md) · [Kaggle writeup](https://www.kaggle.com/competitions/playground-series-s6e5/writeups/568th-place-solution-realmlp-original-dataset).
 
 This is a clean, reproducible solution writeup + code — not a notebook dump.
 
@@ -106,17 +109,23 @@ python train_realmlp_pseudo.py --no-submit --threshold 0.95
 ## Repository layout
 
 ```
+docs/
+  research_note.md        # solution note (start here)
+  pdf/research_note.pdf   # same note as PDF with figures
+  experiment_log.md       # what was tried and dropped
+figures/                  # placement, LB ladder, ROC, folds, …
+scripts/make_figures.py   # regenerate figures from OOF + logs
 train_realmlp.py          # main pipeline (StratKFold + orig + TE)
 train_realmlp_pseudo.py   # pseudo-labeling experiment
 train_realmlp_v2.py       # temporal features in RealMLP (did not help)
 train_with_orig.py        # LGB+XGB+CatBoost + orig
 feature_selection.py      # LGB proxy / importance checks
 download_data.py          # Kaggle competition + original dataset
-docs/experiment_log.md    # what was tried and dropped
 src/                      # shared config, GBDT/LSTM helpers from early work
 ```
 
-`data/`, `models/`, `submissions/`, and `logs/` are gitignored — download locally and train.
+`data/`, `models/`, `submissions/`, and `logs/` are gitignored — download locally and train.  
+Figures need a local `data/train.csv` + `submissions/oof_realmlp.csv` (produced by training).
 
 ---
 
